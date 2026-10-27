@@ -1,10 +1,4 @@
 fun main() {
-    println("HELLO FROM GREENBACK HARVESTER")
-    val databaseManager = DatabaseManager()
-    databaseManager.createAccountsTable()
-
-    println("Database and accounts table are ready!")
-
     println("================================")
     println("        GREENBACKS LEDGE")
     println("================================")
@@ -14,16 +8,6 @@ fun main() {
     println()
 
     val accountManager = AccountManager()
-
-    val checking = Account(
-        name = "My Checking",
-        type = AccountType.CHECKING,
-        openingBalanceCents = 50000L
-    )
-
-    accountManager.addAccount(checking)
-
-    println("Test account added successfully!")
 
     var running = true
 

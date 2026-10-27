@@ -35,4 +35,33 @@ class DatabaseManager {
             statement.executeUpdate()
         }
     }
+
+    fun loadAccounts(): List<Account> {
+        val accounts = mutableListOf<Account>()
+
+        val sql = """
+        SELECT name, type, opening_balance_cents
+        FROM accounts
+    """.trimIndent()
+
+        connection.createStatement().use { statement ->
+            statement.executeQuery(sql).use { resultSet ->
+
+                while (resultSet.next()) {
+                    val account = Account(
+                        name = resultSet.getString("name"),
+                        type = AccountType.valueOf(
+                            resultSet.getString("type")
+                        ),
+                        openingBalanceCents =
+                            resultSet.getLong("opening_balance_cents")
+                    )
+
+                    accounts.add(account)
+                }
+            }
+        }
+
+        return accounts
+    }
 }

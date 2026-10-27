@@ -3,6 +3,11 @@ class AccountManager {
 
     private val accounts = mutableListOf<Account>()
 
+    init {
+        databaseManager.createAccountsTable()
+        accounts.addAll(databaseManager.loadAccounts())
+    }
+
     fun addAccount(account: Account) {
         accounts.add(account)
     }
