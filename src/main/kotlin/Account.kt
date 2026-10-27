@@ -9,5 +9,7 @@ enum class AccountType {
 data class Account(
     val name: String,
     val type: AccountType,
-    val openingBalanceCents: Long
+    val openingBalanceCents: Long,
+    val isActive: Boolean = true,
+    val id: Int? = null
 )

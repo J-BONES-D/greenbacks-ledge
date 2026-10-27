@@ -27,18 +27,19 @@ fun main() {
                 var managingAccounts = true
 
                 while (managingAccounts) {
+                    accountManager.displayAccounts()
                     println()
                     println("MANAGE ACCOUNTS")
                     println("1. Add Account")
-                    println("2. View Accounts")
-                    println("3. Remove Account")
+                    println("2. View Account Ledge")
+                    println("3. Deactivate Account")
                     println("4. Return to Main Menu")
                     print("Choose an option: ")
 
                     when (readln()) {
                         "1" -> accountManager.createAccount()
-                        "2" -> accountManager.displayAccounts()
-                        "3" -> println("Remove account selected.")
+                        "2" -> accountManager.selectAccountForLedge()
+                        "3" -> accountManager.removeAccount()
                         "4" -> managingAccounts = false
                         else -> println("Invalid selection.")
                     }
