@@ -1,12 +1,12 @@
 GREENBACKS LEDGE
 
-A Kotlin/JVM personal finance and checkbook register project built with SQLite.
+A Kotlin/JVM personal finance and checkbook register built with SQLite.
 
 About
 
-GREENBACKS LEDGE is a personal finance application being developed as a practical project while learning and applying Kotlin.
+GREENBACKS LEDGE is a personal finance application being developed as a practical project for learning and applying Kotlin.
 
-The initial goal is to build a reliable, local-first checkbook register that allows users to manage accounts and track their money without requiring an internet connection.
+The goal is to build a reliable, local-first checkbook register that allows users to manage financial accounts and track their money without requiring an internet connection.
 
 Current Features
 
@@ -14,25 +14,39 @@ Create financial accounts
 
 Support multiple account types, including checking, savings, cash, and digital wallets
 
+Store account information in a local SQLite database
+
+Load saved accounts when the application starts
+
+View account details and account transaction history
+
+Record opening balances when creating accounts
+
+Enter deposit and payment transactions
+
+Calculate and store running balances for transactions
+
+Deactivate and reactivate accounts
+
+Keep inactive accounts in read-only mode
+
 Handle monetary amounts using dollars and cents for display and integer cents for storage
 
-Connect to a local SQLite database
-
-Build with Kotlin and Gradle
+Build and run with Kotlin and Gradle
 
 Features are under active development.
 
 Planned Development
 
-Load saved accounts from SQLite when the application starts
+Select and edit existing transactions
 
-View, edit, and remove accounts
+Add transaction deletion with appropriate balance recalculation
 
-Record and display transactions
+Improve transaction validation and error handling
 
-Calculate account balances
+Support recurring transactions
 
-Add recurring transactions
+Expand account management and transaction features
 
 Develop an Android version
 
@@ -52,7 +66,7 @@ IDE: IntelliJ IDEA
 
 Project Status
 
-Early development. The current focus is establishing the application's foundations, learning good software development practices, and building toward a functional checkbook register.
+Early development. The current focus is building a functional checkbook register while learning Kotlin, applying object-oriented programming principles, and establishing good software development practices.
 
 License
 
