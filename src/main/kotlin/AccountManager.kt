@@ -5,6 +5,8 @@ class AccountManager {
 
     init {
         databaseManager.createAccountsTable()
+        databaseManager.createTransactionsTable()
+        databaseManager.ensureTransactionBalanceColumn()
         accounts.addAll(databaseManager.loadAccounts())
     }
 
@@ -75,11 +77,89 @@ class AccountManager {
         }
 
         if (!account.isActive) {
-            println("This account is inactive. Its history has been preserved.")
-            return
+            println("This account is inactive.")
+            println("Its ledger is available in read-only mode.")
         }
 
         openAccountLedge(account)
+    }
+
+    fun calculateRunningBalances(
+        transactions: List<Transaction>
+    ): List<Long> {
+        var runningBalance = 0L
+        val balances = mutableListOf<Long>()
+
+        for (transaction in transactions) {
+            when (transaction.type) {
+                TransactionType.OPENING_BALANCE,
+                TransactionType.DEPOSIT -> {
+                    runningBalance += transaction.amountCents
+                }
+
+                TransactionType.PAYMENT -> {
+                    runningBalance -= transaction.amountCents
+                }
+            }
+
+            balances.add(runningBalance)
+        }
+
+        return balances
+    }
+
+    fun enterTransaction(account: Account) {
+        println()
+        println("ENTER TRANSACTION")
+        println("1. Deposit")
+        println("2. Payment")
+        print("Choose transaction type: ")
+
+        val type = when (readln().trim()) {
+            "1" -> TransactionType.DEPOSIT
+            "2" -> TransactionType.PAYMENT
+            else -> {
+                println("Invalid transaction type.")
+                return
+            }
+        }
+
+        print("Description: ")
+        val description = readln().trim()
+
+        if (description.isBlank()) {
+            println("Description cannot be blank.")
+            return
+        }
+
+        print("Amount (e.g. 12.50): ")
+        val amountInput = readln().trim()
+
+        val amountCents = try {
+            dollarsToCents(amountInput)
+        } catch (exception: Exception) {
+            println("Invalid amount. Enter dollars and cents, such as 12.50.")
+            return
+        }
+
+        if (amountCents <= 0L) {
+            println("Amount must be greater than zero.")
+            return
+        }
+
+        val transaction = Transaction(
+            accountId = account.id!!,
+            type = type,
+            description = description,
+            amountCents = amountCents
+        )
+
+        try {
+            DatabaseManager().saveTransactionWithBalance(transaction)
+            println("Transaction saved successfully.")
+        } catch (exception: Exception) {
+            println("Could not save transaction: ${exception.message}")
+        }
     }
 
     fun openAccountLedge(account: Account) {
@@ -90,17 +170,72 @@ class AccountManager {
             println("================================")
             println("       ${account.name.uppercase()} LEDGE")
             println("================================")
-            println("1. View Transactions")
-            println("2. Enter a Transaction")
-            println("3. Edit a Transaction")
+            if (account.isActive) {
+                println("Status: ACTIVE")
+                println("1. View Transactions")
+                println("2. Enter a Transaction")
+                println("3. Edit a Transaction")
+            } else {
+                println("Status: INACTIVE - READ ONLY")
+                println("1. View Transactions")
+                println("2. Enter a Transaction (Unavailable)")
+                println("3. Edit a Transaction (Unavailable)")
+            }
+
             println("4. Account Details")
             println("5. Return to Account Selection")
             print("Choose an option: ")
 
             when (readln()) {
-                "1" -> println("View transactions selected.")
-                "2" -> println("Enter a transaction selected.")
-                "3" -> println("Edit a transaction selected.")
+                "1" -> {
+                    val databaseManager = DatabaseManager()
+                    val transactions = databaseManager.loadTransactions(account.id!!)
+
+                    println()
+                    println("TRANSACTIONS FOR ${account.name.uppercase()}")
+
+                    if (transactions.isEmpty()) {
+                        println("No transactions found.")
+                    } else {
+                        println()
+                        println("%-12s %-22s %12s %12s".format(
+                            "DATE", "DESCRIPTION", "AMOUNT", "BALANCE"
+                        ))
+                        println("-".repeat(62))
+
+                        for ((index, transaction) in transactions.withIndex()) {
+                            val amount = when (transaction.type) {
+                                TransactionType.PAYMENT ->
+                                    "-" + centsToDollars(transaction.amountCents)
+
+                                else -> centsToDollars(transaction.amountCents)
+                            }
+
+                            println(
+                                "%-12s %-22s %12s %12s".format(
+                                    transaction.date,
+                                    transaction.description,
+                                    amount,
+                                    centsToDollars(transaction.balanceCents)
+                                )
+                            )
+                        }
+                    }
+                }
+                "2" -> {
+                    if (account.isActive) {
+                        enterTransaction(account)
+                    } else {
+                        println("This account is inactive. Transactions cannot be entered.")
+                    }
+                }
+                "3" -> {
+                    if (account.isActive) {
+                        println("Transaction editing will be implemented next.")
+                    } else {
+                        println("This account is inactive. Transactions cannot be edited.")
+                    }
+                }
                 "4" -> {
                     println()
                     println("ACCOUNT DETAILS")
@@ -170,7 +305,7 @@ class AccountManager {
             openingBalanceCents = balanceCents
         )
 
-        val accountId = databaseManager.saveAccount(account)
+        val accountId = databaseManager.saveAccountWithOpeningBalance(account)
 
         val savedAccount = account.copy(id = accountId)
 
@@ -237,6 +372,66 @@ class AccountManager {
             }
             "n", "no" -> println("Deactivation cancelled.")
             else -> println("Invalid response. Deactivation cancelled.")
+        }
+    }
+
+    fun reactivateAccount() {
+        val inactiveAccounts = accounts.filter { !it.isActive }
+
+        if (inactiveAccounts.isEmpty()) {
+            println("There are no inactive accounts to reactivate.")
+            return
+        }
+
+        println()
+        println("SELECT ACCOUNT TO REACTIVATE")
+
+        for (account in inactiveAccounts) {
+            println("${account.id}. ${account.name} - ${account.type}")
+        }
+
+        print("Enter account ID (or 0 to cancel): ")
+
+        val accountId = readln().toIntOrNull()
+
+        if (accountId == null) {
+            println("Please enter a valid account ID.")
+            return
+        }
+
+        if (accountId == 0) {
+            println("Reactivation cancelled.")
+            return
+        }
+
+        val account = inactiveAccounts.find { it.id == accountId }
+
+        if (account == null) {
+            println("Account ID not found.")
+            return
+        }
+
+        print("Reactivate '${account.name}'? (y/n): ")
+
+        when (readln().trim().lowercase()) {
+            "y", "yes" -> {
+                databaseManager.reactivateAccount(accountId)
+
+                val accountIndex = accounts.indexOfFirst {
+                    it.id == accountId
+                }
+
+                if (accountIndex != -1) {
+                    accounts[accountIndex] =
+                        accounts[accountIndex].copy(isActive = true)
+                }
+
+                println("Account reactivated successfully!")
+            }
+
+            "n", "no" -> println("Reactivation cancelled.")
+
+            else -> println("Invalid response. Reactivation cancelled.")
         }
     }
 }
